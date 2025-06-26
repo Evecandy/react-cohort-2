@@ -1,0 +1,43 @@
+.Modal {
+    position: fixed;
+    z-index: 500;
+    background-color: #f4f4f4;
+    width: 100%;
+    border: 1px solid #ccc;
+    box-shadow: 1px 1px 1px #f0a500;
+    padding: 3rem 2rem;
+    left: 0%;
+    top: 50%;
+    height: auto;
+    box-sizing: border-box;
+    transition: all 0.3s ease-out;
+
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+}
+
+.Buttons {
+
+}
+
+.ToHomeButton {
+    padding: 0.8rem 1rem;
+    margin-top: 2rem;
+    margin-right: 1rem;
+    outline: none;
+    transition: all 1s;
+}
+.ToHomeButton:hover {
+    background-color: cadetblue;
+    outline: none;
+}
+@media (min-width: 600px) {
+    .Modal {
+        width: 500px;
+        left: calc(50% - 250px);
+    }
+}
+@media (max-width: 500px) {
+
+}
