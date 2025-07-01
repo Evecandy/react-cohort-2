@@ -14,7 +14,9 @@ export default function User({}) {
     const {id} = useParams();
     // todo useSearchParams()
 
-    useEffect(() =>{
+    useEffect(() => {
+        if (!id) return;
+
         async function getData() {
             setIsLoading(true);
             try {
@@ -22,23 +24,47 @@ export default function User({}) {
                 console.log(response);
 
                 if (!response.ok) {
-                    setError("Failed To Fetch The data")
+                    setError("Failed to fetch the data");
                     throw new Error(`Response status: ${response.status}`);
                 }
 
                 const json = await response.json();
-                setUser(json)
-                console.log("User: ", json);
-
-                setIsLoading(false);
+                setUser(json);
+                console.log("User: ", json)
             } catch (error) {
                 console.error(error.message);
-            }finally{
+                setError(error.message);
+            } finally {
                 setIsLoading(false);
             }
         }
+
         getData();
-    },[])
+    }, [id]);
+    //     async function getData() {
+    //         setIsLoading(true);
+    //         try {
+    //             const response = await fetch(`${url}/${id}`);
+    //             console.log(response);
+    //
+    //             if (!response.ok) {
+    //                 setError("Failed To Fetch The data")
+    //                 throw new Error(`Response status: ${response.status}`);
+    //             }
+    //
+    //             const json = await response.json();
+    //             setUser(json)
+    //             console.log("User: ", json);
+    //
+    //             setIsLoading(false);
+    //         } catch (error) {
+    //             console.error(error.message);
+    //         }finally{
+    //             setIsLoading(false);
+    //         }
+    //     }
+    //     getData();
+    // },[])
 
 
     return (
@@ -46,12 +72,14 @@ export default function User({}) {
             <h1 className="text-3xl font-bold text-center my-5">User Details</h1>
             {isLoading ? (
                 <p className="text-center text-gray-500">Loading...</p>
-            ) : (
+            ) : user && user.id ? (
                 <div className="my-5 w-full">
-                    <div className=" flex justify-center">
+                    <div className="flex justify-center">
                         <MoreDetailedUserCard key={user.id} user={user} />
                     </div>
                 </div>
+            ) : (
+                <p className="text-center text-red-500">User not found.</p>
             )}
 
 

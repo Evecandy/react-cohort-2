@@ -2,17 +2,17 @@ import React, { useEffect, useState } from "react";
 import TodoList from "../components/TodoList";
 import TodoForm from "../components/TodoForm";
 import Modal from "../components/ui/Modal.jsx";
-import {useNavigate} from "react-router-dom";
-
-
+import { useNavigate } from "react-router-dom";
+import Search from "../components/ui/Search.jsx";
 
 const url = "https://jsonplaceholder.typicode.com/todos";
+
 const TodoListApp = () => {
+  const [searchTerm, setSearchTerm] = useState("");
   const [todos, setTodos] = useState([]);
   const [isEditing, setIsEditing] = useState(false);
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState("")
-
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
 
   const [openModal, setOpenModal] = useState(false);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
@@ -28,42 +28,36 @@ const TodoListApp = () => {
 
   const navigate = useNavigate();
 
-
-  useEffect(() =>{
+  useEffect(() => {
     async function getData() {
-
       setIsLoading(true);
       try {
         const response = await fetch(url);
-        console.log(response);
-
         if (!response.ok) {
-          setError("Failed To Fetch The data")
+          setError("Failed To Fetch The data");
           throw new Error(`Response status: ${response.status}`);
         }
 
         const json = await response.json();
-
-
-        setTodos(json.slice(0, 10).map(todo => ({
-          id: todo.id,
-          todoName: todo.title,
-          desc: "No description available",
-          completed: todo.completed,
-        })));
+        setTodos(
+            json.slice(0, 10).map((todo) => ({
+              id: todo.id,
+              todoName: todo.title,
+              desc: "No description available",
+              completed: todo.completed,
+            }))
+        );
 
         setIsLoading(false);
       } catch (error) {
         console.error(error.message);
-      }finally{
+      } finally {
         setIsLoading(false);
       }
     }
 
     getData();
-  },[])
-
-
+  }, []);
 
   const handleInputChange = (event) => {
     setTodoData({
@@ -100,7 +94,6 @@ const TodoListApp = () => {
           id: Math.floor(Math.random() * 1000),
         },
       ]);
-
     }
 
     setTodoData({
@@ -110,28 +103,21 @@ const TodoListApp = () => {
     });
   };
 
-  //red button -- opens the modal
   const handleDeleteTodo = (id) => {
-    setTodoDeleteId(id)
+    setTodoDeleteId(id);
     setOpenModal(true);
-    // setTodos((prevTodos) => prevTodos.filter((todo) => todo.id !== id));
   };
 
-  //Amber button -- deletes the todo item
   const handleDelete = () => {
-    const todoToBeDeleted = todos.find(todo => todo.id === todoToDeleteId);
+    const todoToBeDeleted = todos.find((todo) => todo.id === todoToDeleteId);
     setDeletedTodoName(todoToBeDeleted.todoName);
     setTodos((prevTodos) =>
         prevTodos.filter((todo) => todo.id !== todoToDeleteId)
     );
 
     setOpenModal(false);
-
-
-    //navigate to /users
     navigate(`/users`);
-    // setIsSuccessModalOpen(true)
-  }
+  };
 
   const handleUpdate = (id) => {
     setIsEditing(true);
@@ -147,13 +133,15 @@ const TodoListApp = () => {
     setOpenModal(false);
   };
 
-
   const closeSuccessModal = () => {
     setIsSuccessModalOpen(false);
     setDeletedTodoName("");
-  }
+  };
 
-
+  // ✅ Filter todos based on search term
+  const filteredTodos = todos.filter((todo) =>
+      todo.todoName.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
       <div>
@@ -162,6 +150,10 @@ const TodoListApp = () => {
         </h1>
 
         <div className="my-5">
+          <Search
+              searchTerm={searchTerm}
+              onSearchChange={(e) => setSearchTerm(e.target.value)}
+          />
           <TodoForm
               todoData={todoData}
               isEditing={isEditing}
@@ -174,17 +166,27 @@ const TodoListApp = () => {
             <p className="text-center text-gray-500">Loading...</p>
         ) : (
             <div>
-
-
               <Modal show={openModal} modalClosed={() => setOpenModal(false)}>
-                <p className="text-center text-amber-800 text-3xl uppercase">Confirm Delete</p>
-
-                <p className="text-center text-gray-700 mt-2">Are you sure you want to delete:
+                <p className="text-center text-amber-800 text-3xl uppercase">
+                  Confirm Delete
+                </p>
+                <p className="text-center text-gray-700 mt-2">
+                  Are you sure you want to delete:{" "}
                   <span className="font-semibold">{deletedTodoName}</span>
                 </p>
                 <div className="flex justify-between mt-4">
-                  <button className="bg-blue-400 px-4 py-2 rounded-xl"  onClick={() => setOpenModal(false)}>Cancel</button>
-                  <button className="bg-amber-800 px-4 py-2 rounded-xl"  onClick={handleDelete}>Delete</button>
+                  <button
+                      className="bg-blue-400 px-4 py-2 rounded-xl"
+                      onClick={() => setOpenModal(false)}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                      className="bg-amber-800 px-4 py-2 rounded-xl"
+                      onClick={handleDelete}
+                  >
+                    Delete
+                  </button>
                 </div>
               </Modal>
 
@@ -204,17 +206,14 @@ const TodoListApp = () => {
                     Close
                   </button>
                 </div>
-
               </Modal>
 
-
-              {/* div rendering our todo list items */}
+              {/* ✅ Pass filtered todos instead of full todos */}
               <TodoList
-                  myTodos={todos}
+                  myTodos={filteredTodos}
                   handleDeleteTodo={handleDeleteTodo}
                   handleUpdate={handleUpdate}
               />
-
             </div>
         )}
 
