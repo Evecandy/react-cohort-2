@@ -105,6 +105,8 @@ const TodoListApp = () => {
 
   const handleDeleteTodo = (id) => {
     setTodoDeleteId(id);
+    const todoToBeDeleted = todos.find((todo) => todo.id === id);
+    setDeletedTodoName(todoToBeDeleted ? todoToBeDeleted.todoName : "");
     setOpenModal(true);
   };
 
@@ -116,7 +118,7 @@ const TodoListApp = () => {
     );
 
     setOpenModal(false);
-    navigate(`/users`);
+    setIsSuccessModalOpen(true);
   };
 
   const handleUpdate = (id) => {
