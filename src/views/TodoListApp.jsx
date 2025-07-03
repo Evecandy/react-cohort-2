@@ -1,14 +1,23 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import TodoList from "../components/TodoList";
 import TodoForm from "../components/TodoForm";
-
+import Modal from "../components/ui/Modal.jsx";
+import { useNavigate } from "react-router-dom";
+import Search from "../components/ui/Search.jsx";
 
 const url = "https://jsonplaceholder.typicode.com/todos";
+
 const TodoListApp = () => {
+  const [searchTerm, setSearchTerm] = useState("");
   const [todos, setTodos] = useState([]);
   const [isEditing, setIsEditing] = useState(false);
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState("")
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  const [openModal, setOpenModal] = useState(false);
+  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+  const [deletedTodoName, setDeletedTodoName] = useState("");
+  const [todoToDeleteId, setTodoDeleteId] = useState(null);
 
   const [todoData, setTodoData] = useState({
     id: null,
@@ -17,13 +26,46 @@ const TodoListApp = () => {
     completed: false,
   });
 
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    async function getData() {
+      setIsLoading(true);
+      try {
+        const response = await fetch(url);
+        if (!response.ok) {
+          setError("Failed To Fetch The data");
+          throw new Error(`Response status: ${response.status}`);
+        }
+
+        const json = await response.json();
+        setTodos(
+            json.slice(0, 10).map((todo) => ({
+              id: todo.id,
+              todoName: todo.title,
+              desc: "No description available",
+              completed: todo.completed,
+            }))
+        );
+
+        setIsLoading(false);
+      } catch (error) {
+        console.error(error.message);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    getData();
+  }, []);
+
   const handleInputChange = (event) => {
     setTodoData({
       ...todoData,
       [event.target.id]:
-        event.target.type === "checkbox"
-          ? event.target.checked
-          : event.target.value,
+          event.target.type === "checkbox"
+              ? event.target.checked
+              : event.target.value,
     });
   };
 
@@ -32,16 +74,16 @@ const TodoListApp = () => {
 
     if (isEditing) {
       setTodos((prevTodos) =>
-        prevTodos.map((todo) =>
-          todo.id === todoData.id
-            ? {
-                ...todo,
-                todoName: todoData.todoName,
-                desc: todoData.desc,
-                completed: todoData.completed,
-              }
-            : todo
-        )
+          prevTodos.map((todo) =>
+              todo.id === todoData.id
+                  ? {
+                    ...todo,
+                    todoName: todoData.todoName,
+                    desc: todoData.desc,
+                    completed: todoData.completed,
+                  }
+                  : todo
+          )
       );
       setIsEditing(false);
     } else {
@@ -52,29 +94,6 @@ const TodoListApp = () => {
           id: Math.floor(Math.random() * 1000),
         },
       ]);
-
-      // try {
-      //   const response = await fetch(url, {
-      //     method: "POST",
-      //     headers: {
-      //       "Content-Type": "application/json",
-      //     },
-      //     body: JSON.stringify(
-      //       {
-      //             ...todoData,
-      //             id: Math.floor(Math.random() * 1000),
-      //           },
-      //     ),
-      //   });
-  
-      //   if (response.ok) {
-      //     toast.success("Message sent successfully! 🎉");
-      //     reset();
-      //   } else {
-      //     const errorDetails = await response.json();
-      //     toast.error("Failed to send message. Please try again.");
-      //     console.error("Error sending email:", errorDetails.message);
-      //   }
     }
 
     setTodoData({
@@ -85,7 +104,21 @@ const TodoListApp = () => {
   };
 
   const handleDeleteTodo = (id) => {
-    setTodos((prevTodos) => prevTodos.filter((todo) => todo.id !== id));
+    setTodoDeleteId(id);
+    const todoToBeDeleted = todos.find((todo) => todo.id === id);
+    setDeletedTodoName(todoToBeDeleted ? todoToBeDeleted.todoName : "");
+    setOpenModal(true);
+  };
+
+  const handleDelete = () => {
+    const todoToBeDeleted = todos.find((todo) => todo.id === todoToDeleteId);
+    setDeletedTodoName(todoToBeDeleted.todoName);
+    setTodos((prevTodos) =>
+        prevTodos.filter((todo) => todo.id !== todoToDeleteId)
+    );
+
+    setOpenModal(false);
+    setIsSuccessModalOpen(true);
   };
 
   const handleUpdate = (id) => {
@@ -98,75 +131,96 @@ const TodoListApp = () => {
       desc: todoToUpdate.desc,
       completed: todoToUpdate.completed,
     });
+
+    setOpenModal(false);
   };
 
+  const closeSuccessModal = () => {
+    setIsSuccessModalOpen(false);
+    setDeletedTodoName("");
+  };
 
-  useEffect(() =>{
-    async function getData() {
-
-      setIsLoading(true);
-      try {
-        const response = await fetch(url);
-        console.log(response);
-        
-        if (!response.ok) {
-          setError("Failed To Fetch The data")
-          throw new Error(`Response status: ${response.status}`);
-        }
-
-        const json = await response.json();
-       
-        
-      setTodos(json.slice(0, 10).map(todo => ({
-          id: todo.id,
-          todoName: todo.title,
-          desc: "No description available",
-          completed: todo.completed,
-        })));
-        
-        setIsLoading(false);
-      } catch (error) {
-        console.error(error.message);
-      }finally{
-        setIsLoading(false);
-      }
-    }
-    
-    getData();
-  },[])
-  
-
+  // ✅ Filter todos based on search term
+  const filteredTodos = todos.filter((todo) =>
+      todo.todoName.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
-    <div>
-      <h1 className="text-2xl text-gray-700 text-center font-bold">
-        Todo List App
-      </h1>
+      <div>
+        <h1 className="text-2xl text-gray-700 text-center font-bold">
+          Todo List App
+        </h1>
 
-      <div className="my-5">
-        <TodoForm
-          todoData={todoData}
-          isEditing={isEditing}
-          handleInputChange={handleInputChange}
-          handleFormSubmit={handleFormSubmit}
-        />
-      </div>
-
-      {isLoading ? (
-        <p className="text-center text-gray-500">Loading...</p>
-      ) : (
-        <div>
-          {/* div rendering our todo list items */}
-          <TodoList
-            myTodos={todos}
-            handleDeleteTodo={handleDeleteTodo}
-            handleUpdate={handleUpdate}
+        <div className="my-5">
+          <Search
+              searchTerm={searchTerm}
+              onSearchChange={(e) => setSearchTerm(e.target.value)}
+          />
+          <TodoForm
+              todoData={todoData}
+              isEditing={isEditing}
+              handleInputChange={handleInputChange}
+              handleFormSubmit={handleFormSubmit}
           />
         </div>
-      )}
 
-      {error && <p className="text-center text-red-500">{error}</p>}
-    </div>
+        {isLoading ? (
+            <p className="text-center text-gray-500">Loading...</p>
+        ) : (
+            <div>
+              <Modal show={openModal} modalClosed={() => setOpenModal(false)}>
+                <p className="text-center text-amber-800 text-3xl uppercase">
+                  Confirm Delete
+                </p>
+                <p className="text-center text-gray-700 mt-2">
+                  Are you sure you want to delete:{" "}
+                  <span className="font-semibold">{deletedTodoName}</span>
+                </p>
+                <div className="flex justify-between mt-4">
+                  <button
+                      className="bg-blue-400 px-4 py-2 rounded-xl"
+                      onClick={() => setOpenModal(false)}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                      className="bg-amber-800 px-4 py-2 rounded-xl"
+                      onClick={handleDelete}
+                  >
+                    Delete
+                  </button>
+                </div>
+              </Modal>
+
+              <Modal show={isSuccessModalOpen} modalClosed={closeSuccessModal}>
+                <p className="text-center text-green-600 text-3xl uppercase">
+                  Success!
+                </p>
+                <p className="text-center text-gray-700 mt-2">
+                  Successfully deleted item:{" "}
+                  <span className="font-semibold">{deletedTodoName}</span>.
+                </p>
+                <div className="flex justify-center mt-6">
+                  <button
+                      className="bg-blue-500 hover:bg-blue-600 px-5 py-2 rounded-xl text-white font-medium transition duration-200"
+                      onClick={closeSuccessModal}
+                  >
+                    Close
+                  </button>
+                </div>
+              </Modal>
+
+              {/* ✅ Pass filtered todos instead of full todos */}
+              <TodoList
+                  myTodos={filteredTodos}
+                  handleDeleteTodo={handleDeleteTodo}
+                  handleUpdate={handleUpdate}
+              />
+            </div>
+        )}
+
+        {error && <p className="text-center text-red-500">{error}</p>}
+      </div>
   );
 };
 
